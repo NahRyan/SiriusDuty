@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 fx_version "adamant"
 game "gta5"
 
@@ -13,7 +14,8 @@ escrow_ignore {
 
 server_scripts {
     "server/*.lua",
-    "plugins/**/*_server.lua"
+    "plugins/**/*_server.lua",
+    "server/bot/*.js"
 }
 
 client_scripts {
@@ -23,8 +25,10 @@ client_scripts {
 
 shared_scripts {
     "shared/*.lua",
-    "plugins/**/*_shared.lua"
+    "plugins/**/*_shared.lua",
+    '@ox_lib/init.lua',
 }
 
 
 dependency '/assetpacks'
+dependency 'ox_lib'

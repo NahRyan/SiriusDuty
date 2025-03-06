@@ -24,7 +24,7 @@ function IsPlayerStaff()
     return data
 end
 
-exports("IsPlayerManagement", IsPlayerManagement)
+exports("IsPlayerStaff", IsPlayerStaff)
 
 function GetPlayerCallsign()
     local data = lib.callback.await('SiriusDuty:GetPlayerCallsign', false)

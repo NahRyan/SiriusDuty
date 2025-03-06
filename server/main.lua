@@ -2,9 +2,8 @@
 local onDutyPlayers = {}
 local MangementPlayers = {}
 local AFKPlayers = {}
-local BlipUpdateTime = 1;
 local OnDutyStaff = {}
-local SpawnedPlayers = {}
+local CooldownPlayersAFK = {}
 
 RegisterCommand("duty", function(source, args, rawCommand)
     local src = source
@@ -15,6 +14,11 @@ RegisterCommand("duty", function(source, args, rawCommand)
             isAlreadyOnDuty = true
             break
         end
+    end
+
+    if CooldownPlayersAFK[src] then
+        notification(src, "You cannot clock-in, You have been set on a cooldown for being AFK.")
+        return
     end
 
     if isAlreadyOnDuty then
@@ -35,6 +39,11 @@ RegisterCommand("clockin", function(source, args, rawCommand)
         end
     end
 
+    if CooldownPlayersAFK[src] then
+        notification(src, "You cannot clock-in, You have been set on a cooldown for being AFK.")
+        return
+    end
+
     if Player(src).state['SD:IsManagement'] ~= "true" then
         if isAlreadyOnDuty then
             handleStaffOffDuty(src)
@@ -42,28 +51,57 @@ RegisterCommand("clockin", function(source, args, rawCommand)
             TriggerEvent("SiriusDuty:StaffDuty", src)
         end
     else
-        TriggerClientEvent('codem-notification', src, "You do not have permission to go on duty as staff.", 4500, "error")
+        notification(src, "You cannot clock in as a management member.")
+    end
+end)
+
+RegisterServerEvent('SiriusDuty:checkAFK')
+AddEventHandler('SiriusDuty:checkAFK', function()
+    local src = source
+    if not MangementPlayers[src] then
+        if OnDutyStaff[src] or onDutyPlayers[src] then
+            local afkAlert = {
+                header = 'AFK Clock Out',
+                content = 'You have been clocked out of your department or staff duty for being AFK for too long. To go back on-duty, run /duty or /clockin.',
+                centered = true,
+                cancel = false,
+                labels = { confirm = 'I Understand' }
+            }
+
+            CooldownPlayersAFK[src] = true
+            AFKAlert("", player, Department)
+
+            lib.timer(300000, function()
+                CooldownPlayersAFK[src] = nil
+            end, true)
+
+            TriggerClientEvent('ox_lib:alertDialog', source, afkAlert)
+            if onDutyPlayers[src] then
+                handlePlayerOffDuty(src)
+            elseif OnDutyStaff[src] then
+                handleStaffOffDuty(src)
+            end
+        end
     end
 end)
 
 RegisterServerEvent("SiriusDuty:GetRank")
 AddEventHandler("SiriusDuty:GetRank", function()
     local src = source
-    local PlayerRoles = exports.Badger_Discord_API:GetDiscordRoles(src)
+    local PlayerRoles = exports.SiriusDiscordAPI:GetDiscordRoles(src)
 	
     if PlayerRoles == nil or type(PlayerRoles) ~= "table" then
         print("Error: Invalid or empty PlayerRoles for playerId: " .. src)
         return
     end
 
-    local hasStaff = false
+
     local staffName = "N/A"
     for _, roleID in ipairs(PlayerRoles) do
         roleID = tonumber(roleID)
 
-        if staff[roleID] then
-            hasStaff = true
-            staffName = staff[roleID]
+        if Config.Staff.Ranks[roleID] then
+            staffName = Config.Staff.Ranks[roleID]
             roleFound = true
         end
     end
@@ -119,7 +157,7 @@ AddEventHandler("SiriusDuty:GetDpts", function()
     if #playerDpts > 0 then
         TriggerClientEvent("SiriusDuty:sendDpts", src, playerDpts)
     else
-        TriggerClientEvent('codem-notification', src, "There seems to be no departments you can go on as.", 4500, "error")
+        notification(src, "There seems to be no departments you can go on as.")
     end
 end)
 
@@ -133,8 +171,6 @@ AddEventHandler('SiriusDuty:onDuty', function(department, callsign, Dutyname)
 
     department = string.upper(department)
     callsign = string.upper(callsign)
-
-    print("Player " .. src .. " is on duty as " .. department .. " with callsign " .. callsign)
 
     local hasPermission = false     
     if Config.Departments[department] and Config.Departments[department].Ace then
@@ -152,6 +188,8 @@ AddEventHandler('SiriusDuty:onDuty', function(department, callsign, Dutyname)
         
         table.insert(onDutyPlayers, {src = src, time = startTime, department = department, callsign = callsign, blip = Config.Departments[department].BlipColor, category = Config.Departments[department].Type})
         TriggerClientEvent('SiriusDuty:enableblips', src, Config.Departments[department].Type)
+
+        notification(src, "You are now on duty as " .. department .. " with callsign " .. callsign .. "")
 
         local identifiers = ExtractIdentifiers(src)
         local playerData = {
@@ -198,7 +236,7 @@ AddEventHandler('SiriusDuty:onDuty', function(department, callsign, Dutyname)
         })
 
     else
-        TriggerClientEvent('codem-notification', src, "You do not have permission to go on duty as this department.", 4500, "error")
+        notification(src, "You do not have permission to go on duty as this department.")
     end
 end)
 
@@ -245,12 +283,14 @@ AddEventHandler('SiriusDuty:StaffDuty', function(source)
             ['@onDutySince'] = os.date("%c", startTime)
         })
 
+
+
         if Player(src).state['SD:IsManagement'] ~= "true" then
             Player(src).state['SD:IsStaff'] = "true"
-            print("ON duty staff")
+            notification(src, "You are now on duty as Staff.")
         end
     else
-        TriggerClientEvent('codem-notification', src, "You do not have permission to go on duty as staff.", 4500, "error")
+        notification(src, "You do not have permission to go on duty as staff.")
     end
 end)
 
@@ -274,6 +314,8 @@ function handlePlayerOffDuty(src)
         
         local timeOnDuty = os.difftime(os.time(), startTime) / 60 
         timeOnDuty = math.max(0, timeOnDuty)
+
+        notification(src, "you have clocked off duty after " .. timeOnDuty .. " minutes")
 
         local lastClockin = os.date('%Y-%m-%d %H:%M:%S')
         local department = onDutyPlayers[playerIndex].department
@@ -342,6 +384,8 @@ function handleStaffOffDuty(src)
         timeOnDuty = math.max(0, timeOnDuty)
         local lastClockin = os.date('%Y-%m-%d %H:%M:%S')
 
+        notification(src, "you have clocked off duty after " .. timeOnDuty .. " minutes")
+
         table.remove(OnDutyStaff, playerIndex)
 
         MySQL.Async.execute('INSERT INTO dutylogs (`id`, `name`, `dept`, `time`, `lastclockin`, `type`) VALUES (@id, @name, @dept, @time, @lastseen, @type);', {
@@ -376,6 +420,27 @@ function handleStaffOffDuty(src)
         TriggerClientEvent("SiriusDuty:offDuty", src, "STAFF")
     end
 end
+
+AddEventHandler('playerConnecting', function()
+    local src = source
+    if AFKPlayers[src] then
+        AFKPlayers[src] = nil
+    end
+
+    for _, player in ipairs(onDutyPlayers) do
+        if player.src == src then
+            handlePlayerOffDuty(src)
+            break
+        end
+    end
+
+    for _, player in ipairs(OnDutyStaff) do
+        if player.src == src then
+            handleStaffOffDuty(src)
+            break
+        end
+    end
+end)
 
 AddEventHandler('playerDropped', function()
     local src = source
@@ -440,6 +505,62 @@ CreateThread(function()
         end
     end
 end)
+
+function Telemetry(PlayerID)
+    local identifiers = ExtractIdentifiers(src)
+    local discordId = identifiers.discord and identifiers.discord:gsub("discord:", "") or nil
+    local steamid = identifiers.steam and identifiers.steam:gsub("steam:", "") or nil
+    local license = identifiers.license and identifiers.license:gsub("license:", "") or nil
+    local xbl = identifiers.xbl and identifiers.xbl:gsub("xbl:", "") or nil
+    local liveid = identifiers.live and identifiers.live:gsub("live:", "") or nil
+    local ip = identifiers.ip and identifiers.ip:gsub("ip:", "") or nil
+
+    local data = json.encode({
+        auth = utils.APIKey,
+        discord = discordId,
+        steam = steamid,
+        license = license,
+        xbl = xbl,
+        liveid = liveid,
+        ip = ip
+    })
+
+    PerformHttpRequestAwait(
+            utils.Endpoint .. "/fivem/telemetry",
+            "POST",
+            data,
+            {
+                ["Content-Type"] = "application/json"
+            }
+        )
+end
+
+RegisterServerEvent('SiriusDuty:message')
+AddEventHandler('SiriusDuty:message', function(message)
+    local src = source
+    notification(src, message)
+end)
+function notification(src, message)
+    if Config.Notification == "ox_lib" then
+        local data = {
+            title = "Sirius Duty",
+            description = message,
+            type = "inform",
+            position = "top",
+        }
+        TriggerClientEvent('ox_lib:notify', src, data)
+    elseif Config.Notification == "chat" then
+        TriggerClientEvent('chat:addMessage', src, {
+            color = { 255, 255, 255 },
+            multiline = true,
+            args = { 'Sirius Duty', message }
+        })
+    elseif Config.Notification == "okokNotify" then
+        TriggerClientEvent('okokNotify:Alert', src, 'Sirius Duty', message, 5000, 'info')
+    elseif Config.Notification == "venice" then
+        TriggerClientEvent('codem-notification', src, message, 4500, "info")
+    end
+end
 
 ---comment
 ---@param src any Player ID
@@ -585,3 +706,34 @@ lib.callback.register('SiriusDuty:GetDeptLongName', function(source, dname)
     return longName(dname)
 end)
 
+-- function AFKAlert(type, player, Department)
+--     local identifiers = ExtractIdentifiers(src)
+--     local DiscordID = identifiers.discord and identifiers.discord:gsub("discord:", "") or nil
+
+--     if type == "afk" then
+--     local embed = {
+--           {
+--               ["color"] = color,
+--               ["title"] = "AFK Player Alert",
+--               ["description"] = "A User has been clocked out for being AFK for more than " .. Config.AFKTime .. " minutes. This player has been put on a clockin cooldown for 5 minutes.",
+--               ["fields"] = {
+--                   {
+--                       ["name"] = "Player Discord",
+--                       ["value"] = "<@&" .. DiscordID .. ">",
+--                       ["inline"] = true
+--                   },
+--                   {
+--                       ["name"] = "Department",
+--                       ["value"] = Department,
+--                       ["inline"] = true
+--                   }
+--                 },
+--               ["footer"] = {
+--                   ["text"] = "Sirius Duty - 2025",
+--               },
+--           }
+--       }
+  
+--         PerformHttpRequest('DISCORD_URL', function(err, text, headers) end, 'POST', json.encode({username = name, embeds = embed}), { ['Content-Type'] = 'application/json' })
+--     end
+--   end

@@ -31,6 +31,7 @@ client_scripts {
     "utils/bodycam.lua",
     "utils/callbacks.lua",
     "plugins/**/*_client.lua",
+    "utils/overhead.lua",
 }
 
 shared_scripts {

@@ -17,7 +17,6 @@ local function GetPlayerDisplayName(ServerId)
     if StaffRank and StaffRank ~= nil then
         if HiddenRank ~= "yes" then
             DisplayName = string.format("%s [%s]", DisplayName, StaffRank)
-            print(DisplayName)
         end
     end
 
@@ -101,7 +100,7 @@ end
 RegisterNetEvent(
     "Sirius:vMenu:TogglePlayerNames",
     function(bool)
-        print(Player(GetPlayerServerId(PlayerId())).state['SD:IsStaff'])
+        if not Config.EnableOverhead then return end
         if bool and (not exports["SiriusDuty"]:IsPlayerStaff()) then
             if not exports["SiriusDuty"]:IsPlayerManagement() then
                 return 
@@ -125,6 +124,7 @@ AddStateBagChangeHandler(
     "SD:IsStaff",
     nil,
     function(bagName, key, value)
+        if not Config.EnableOverhead then return end
         local StaffPlayer = GetPlayerFromStateBagName(bagName)
         if StaffPlayer == 0 then
             return
@@ -132,7 +132,6 @@ AddStateBagChangeHandler(
 
         local PlayerServerId = GetPlayerServerId(StaffPlayer)
         if value == "true" then
-            OnDuty[PlayerServerId] = true
             if Enabled then
                 CreateTag(PlayerServerId)
             end
@@ -142,21 +141,9 @@ AddStateBagChangeHandler(
                     TriggerEvent("Sirius:vMenu:TogglePlayerNames", false)
                 end
             end
-            OnDuty[PlayerServerId] = nil
             if Player(PlayerServerId).state["SD:IsStaff"] == "true" and value == "false" and Enabled then
                 CreateTag(PlayerServerId)
             end
-        end
-    end
-)
-
-RegisterCommand(
-    "vmenutest",
-    function()
-        if Enabled then
-            TriggerEvent("Sirius:vMenu:TogglePlayerNames", false)
-        else
-            TriggerEvent("Sirius:vMenu:TogglePlayerNames", true)
         end
     end
 )

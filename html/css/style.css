@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700&display=swap');
+
+@font-face {
+    font-family: 'IBMPlexMono';
+    src: url('../assets/fonts/IBMPlexMono-Bold.ttf') format('truetype');
+}
+
+body {
+    font-family: 'Titillium Web', sans-serif;
+    overflow-x: hidden;
+}
+
+
+.axonbodycam.hidden {
+    display: none;
+}
+
+/* AXON BODYCAM */
+.axonbodycam {
+    border: 1px solid rgba(94, 94, 94, 0.452);
+    position: absolute;
+    width: 300px; 
+    height: 80px;
+    right: 0px;
+    background: rgba(18, 20, 25, 0.8);
+    border-radius: 10px 0px 0px 10px;
+    margin-top: 3.3%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 5px 10px 5px 5px;
+}
+
+.axonbodycam-image {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    padding: 5px;
+    top: 5px;
+    right: 5px;
+}
+
+.axonbodycam-text {
+    font-family: 'IBMPlexMono';
+    font-size: 12px;
+    color: rgba(187, 187, 187, 0.9);
+    text-align: right;
+    margin-right: 35px;
+}
+
+.axonbodycam-text div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.red-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: red;
+    border-radius: 50%;
+    margin: 0 5px;
+    animation: flash 1.5s linear infinite;
+}
+
+@keyframes flash {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+* {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}

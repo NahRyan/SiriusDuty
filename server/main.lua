@@ -506,35 +506,6 @@ CreateThread(function()
     end
 end)
 
-function Telemetry(PlayerID)
-    local identifiers = ExtractIdentifiers(src)
-    local discordId = identifiers.discord and identifiers.discord:gsub("discord:", "") or nil
-    local steamid = identifiers.steam and identifiers.steam:gsub("steam:", "") or nil
-    local license = identifiers.license and identifiers.license:gsub("license:", "") or nil
-    local xbl = identifiers.xbl and identifiers.xbl:gsub("xbl:", "") or nil
-    local liveid = identifiers.live and identifiers.live:gsub("live:", "") or nil
-    local ip = identifiers.ip and identifiers.ip:gsub("ip:", "") or nil
-
-    local data = json.encode({
-        auth = utils.APIKey,
-        discord = discordId,
-        steam = steamid,
-        license = license,
-        xbl = xbl,
-        liveid = liveid,
-        ip = ip
-    })
-
-    PerformHttpRequestAwait(
-            utils.Endpoint .. "/fivem/telemetry",
-            "POST",
-            data,
-            {
-                ["Content-Type"] = "application/json"
-            }
-        )
-end
-
 RegisterServerEvent('SiriusDuty:message')
 AddEventHandler('SiriusDuty:message', function(message)
     local src = source

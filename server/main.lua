@@ -88,7 +88,7 @@ end)
 RegisterServerEvent("SiriusDuty:GetRank")
 AddEventHandler("SiriusDuty:GetRank", function()
     local src = source
-    local PlayerRoles = exports.SiriusDiscordAPI:GetDiscordRoles(src)
+    local PlayerRoles = exports.Badger_Discord_API:GetDiscordRoles(src)
 	
     if PlayerRoles == nil or type(PlayerRoles) ~= "table" then
         print("Error: Invalid or empty PlayerRoles for playerId: " .. src)

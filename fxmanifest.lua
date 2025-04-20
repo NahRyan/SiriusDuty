@@ -21,7 +21,6 @@ ui_page 'html/index.html'
 
 server_scripts {
     "server/*.lua",
-    "config/webhooks.lua",
     '@oxmysql/lib/MySQL.lua',
     "plugins/**/*_server.lua",
 }
@@ -35,10 +34,8 @@ client_scripts {
 }
 
 shared_scripts {
-    "utils/utils.lua",
     '@ox_lib/init.lua',
     'config/config.lua',
-    "plugins/**/*_shared.lua",
 }
 
 escrow_ignore {
